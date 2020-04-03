@@ -14,7 +14,7 @@ type WebCrawlerClient struct {
 	HTTPClient *http.Client
 }
 
-func (v *WebCrawlerClient) GetDocument(url string) (string, error) {
+func (v WebCrawlerClient) GetDocument(url string) (string, error) {
 	resp, err := v.HTTPClient.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("%v error returned from url %v", err, url)
