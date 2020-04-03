@@ -5,11 +5,25 @@ import (
 	"testing"
 
 	"github.com/john-heintschel/webcrawler/internal/utils"
-    "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
-const TEST_HTMLDOC_ONE string = "<p>Links:</p><ul><li><a href=\"http://www.google.com/foo.html\">Foo</a><li><a href=\"foo.html\">Foo</a><li><a href=\"/bar/baz.html\">BarBaz</a></ul>"
-const TEST_HTMLDOC_TWO string = "<p>Links:</p><ul><li><a href=\"http://www.google.com/foo.html\">Foo</a><li><a href=\"http://www.linktest.com/foo.html\">Foo</a><li><a href=\"/bar/baz.html\">BarBaz</a></ul>"
+const TEST_HTMLDOC_ONE string = `
+    <p>Links:</p>
+        <ul>
+            <li><a href="http://www.google.com/foo.html">Foo</a>
+        	<li><a href="foo.html">Foo</a>
+        	<li><a href="/bar/baz.html">BarBaz</a>
+    	</ul>
+`
+const TEST_HTMLDOC_TWO string = `
+    <p>Links:</p>
+	<ul>
+        <li><a href="http://www.google.com/foo.html">Foo</a>
+    	<li><a href="http://www.linktest.com/foo.html">Foo</a>
+    	<li><a href="/bar/baz.html">BarBaz</a>
+	</ul>
+`
 
 type mockClient struct{}
 
@@ -28,15 +42,6 @@ func (v mockClient) GetDocument(input string) (string, error) {
 	}
 }
 
-type mockCache struct {
-	Count int
-}
-
-func (v *mockCache) Get(input string) int {
-	return v.Count
-}
-func (v *mockCache) Increment(string) {}
-
 type indexArg struct {
 	url     string
 	htmldoc string
@@ -46,9 +51,9 @@ func TestConsumerDepth(t *testing.T) {
 
 	// test that consumer doesn't go beyond the depth its supposed to
 	httpclient := mockClient{}
-	cache := &mockCache{Count: 0}
-	urls := make(chan string, 10)
-	urls <- "http://www.linktest.com"
+	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	urls := make(chan utils.UrlItem, 10)
+	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
 
 	testConsumer := utils.UrlConsumer{
 		MaxDepth:           1,
@@ -61,17 +66,14 @@ func TestConsumerDepth(t *testing.T) {
 
 	testConsumer.Consume(urls, mockIndexer)
 	assert.Equal(t, indexOutput[0], indexArg{url: "http://www.linktest.com", htmldoc: TEST_HTMLDOC_ONE})
-	assert.Equal(t, <-urls, "http://www.google.com/foo.html")
-	assert.Equal(t, <-urls, "http://www.linktest.com/foo.html")
-	assert.Equal(t, <-urls, "http://www.linktest.com/bar/baz.html")
 }
 
 func TestConsumerMaxRequestsPerDomain(t *testing.T) {
 	// test that the consumer doesn't go beyond the max requests per domain
 	httpclient := mockClient{}
-	cache := &utils.UrlCache{Mem: make(map[string]int, 0)}
-	urls := make(chan string, 10)
-	urls <- "http://www.linktest.com"
+	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	urls := make(chan utils.UrlItem, 10)
+	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
 
 	testConsumer := utils.UrlConsumer{
 		MaxDepth:           3,
@@ -87,5 +89,3 @@ func TestConsumerMaxRequestsPerDomain(t *testing.T) {
 	assert.Equal(t, indexArg{url: "http://www.google.com/foo.html", htmldoc: TEST_HTMLDOC_TWO}, indexOutput[1])
 	assert.Equal(t, 2, len(indexOutput))
 }
-
-// test that the consumer continues if it gets an error fetching a page 500

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"time"
 )
 
 var SEARCH_STRING = "wham" // TODO this should be taken in as argument
@@ -22,26 +23,39 @@ func index(uri string, htmldoc string) {
 	fmt.Printf("url: %v contains the string \"%v\": %v\n", uri, SEARCH_STRING, hasString)
 }
 
-func (v *UrlConsumer) Consume(urls chan string, indexer func(uri, input string)) {
-	depth := 0 // TODO this needs to be implemented as depth and in the cache
-	docParser := PageParser{}
+type UrlItem struct {
+	Url   string
+	Depth int
+}
 
+func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string)) {
+	docParser := PageParser{}
+	var uri string
+	var depth int
+	timeout := false
 	for {
-		if depth >= v.MaxDepth {
+		select {
+		case urlitem := <-urls:
+			uri = urlitem.Url
+			depth = urlitem.Depth
+		case <-time.After(time.Second):
+			timeout = true
+		}
+		if timeout {
 			break
 		}
-		uri := <-urls
-
+		if v.UrlCache.AlreadySeen(uri) {
+			continue
+		}
 		u, err := url.Parse(uri)
 		if err != nil {
 			log.Fatal(err)
 			continue
 		}
 		baseurl := fmt.Sprintf("%v://%v/", u.Scheme, u.Host)
-		if count := v.UrlCache.Get(baseurl); count >= v.MaxRequestsPerHost {
-			break
-		} else {
-			v.UrlCache.Increment(baseurl)
+		cachedBaseUrlCount := v.UrlCache.GetBaseUrlCount(baseurl)
+		if cachedBaseUrlCount >= v.MaxRequestsPerHost {
+			continue
 		}
 		htmldoc, err := v.HttpClient.GetDocument(uri)
 		if err != nil {
@@ -49,11 +63,12 @@ func (v *UrlConsumer) Consume(urls chan string, indexer func(uri, input string))
 			continue
 		}
 		indexer(uri, htmldoc)
-		links := docParser.GetLinks(htmldoc, baseurl)
-
-		for _, link := range links {
-			urls <- link
+		if depth+1 >= v.MaxDepth {
+			continue
 		}
-		depth++
+		links := docParser.GetLinks(htmldoc, baseurl)
+		for _, link := range links {
+			urls <- UrlItem{Url: link, Depth: depth + 1}
+		}
 	}
 }

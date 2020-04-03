@@ -8,24 +8,23 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	cache := utils.UrlCache{Mem: make(map[string]int, 0)}
-	testVal := cache.Get("hello")
+	cache := utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	testVal := cache.GetBaseUrlCount("hello")
 	if testVal != 0 {
-		t.Errorf("cache Get failed, expected %v got %v", 0, testVal)
+		t.Errorf("cache GetBaseUrlCount failed, expected %v got %v", 0, testVal)
 	}
-	cache.Increment("hello")
-	testVal = cache.Get("hello")
+	testVal = cache.GetBaseUrlCount("hello")
 	if testVal != 1 {
-		t.Errorf("cache Get failed, expected %v got %v", 1, testVal)
+		t.Errorf("cache GetBaseUrlCount failed, expected %v got %v", 1, testVal)
 	}
 
 	for i := 0; i < 10000; i++ {
-		go cache.Increment("hello")
-		go cache.Increment("there")
+		go cache.GetBaseUrlCount("hello")
+		go cache.GetBaseUrlCount("there")
 	}
 	time.Sleep(time.Second)
 
-	if cache.Get("hello") != 10001 || cache.Get("there") != 10000 {
+	if cache.GetBaseUrlCount("hello") != 10002 || cache.GetBaseUrlCount("there") != 10000 {
 		t.Errorf("cache Increment failed")
 	}
 

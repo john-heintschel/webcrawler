@@ -29,5 +29,3 @@ func (v *WebCrawlerClient) GetDocument(url string) (string, error) {
 	}
 	return "", fmt.Errorf("%v response received", resp.StatusCode)
 }
-
-

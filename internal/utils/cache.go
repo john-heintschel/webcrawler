@@ -5,31 +5,34 @@ import (
 )
 
 type Cache interface {
-	Get(string) int // TODO change this to include depth in search tree as well as frequency
-	Increment(string)
+	GetBaseUrlCount(string) int
+	AlreadySeen(string) bool
 }
 
 type UrlCache struct {
-	Mem map[string]int
-	mux sync.Mutex
+	BaseMem  map[string]int
+	ExactMem map[string]bool
+	mux      sync.Mutex
 }
 
-func (v *UrlCache) Get(url string) int {
+func (v *UrlCache) AlreadySeen(url string) bool {
+	// this function also marks as seen while it has the lock
 	v.mux.Lock()
 	defer v.mux.Unlock()
-	if val, exists := v.Mem[url]; exists {
-		return val
-	} else {
-		return 0
-	}
+	value := v.ExactMem[url]
+	v.ExactMem[url] = true
+	return value
 }
 
-func (v *UrlCache) Increment(url string) {
+func (v *UrlCache) GetBaseUrlCount(url string) int {
+	// this function also increments the counter while it has the lock
 	v.mux.Lock()
-	if _, exists := v.Mem[url]; exists {
-		v.Mem[url]++
+	defer v.mux.Unlock()
+	if val, exists := v.BaseMem[url]; exists {
+		v.BaseMem[url] = val + 1
+		return val
 	} else {
-		v.Mem[url] = 1
+		v.BaseMem[url] = 1
+		return 0
 	}
-	v.mux.Unlock()
 }
