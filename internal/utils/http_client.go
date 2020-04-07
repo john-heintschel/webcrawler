@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -15,7 +16,12 @@ type WebCrawlerClient struct {
 }
 
 func (v WebCrawlerClient) GetDocument(url string) (string, error) {
-	resp, err := v.HTTPClient.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101 Firefox/68.0")
+	resp, err := v.HTTPClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("%v error returned from url %v", err, url)
 	}

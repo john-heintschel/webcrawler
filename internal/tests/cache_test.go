@@ -2,13 +2,12 @@ package tests
 
 import (
 	"testing"
-	"time"
 
 	"github.com/john-heintschel/webcrawler/internal/utils"
 )
 
 func TestCache(t *testing.T) {
-	cache := utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	cache := utils.UrlCache{BaseMem: make(map[string]int), ExactMem: make(map[string]bool)}
 	testVal := cache.GetBaseUrlCount("hello")
 	if testVal != 0 {
 		t.Errorf("cache GetBaseUrlCount failed, expected %v got %v", 0, testVal)
@@ -18,13 +17,12 @@ func TestCache(t *testing.T) {
 		t.Errorf("cache GetBaseUrlCount failed, expected %v got %v", 1, testVal)
 	}
 
-	for i := 0; i < 10000; i++ {
-		go cache.GetBaseUrlCount("hello")
-		go cache.GetBaseUrlCount("there")
+	for i := 0; i < 100; i++ {
+		cache.GetBaseUrlCount("hello")
+		cache.GetBaseUrlCount("there")
 	}
-	time.Sleep(time.Second)
 
-	if cache.GetBaseUrlCount("hello") != 10002 || cache.GetBaseUrlCount("there") != 10000 {
+	if cache.GetBaseUrlCount("hello") != 102 || cache.GetBaseUrlCount("there") != 100 {
 		t.Errorf("cache Increment failed")
 	}
 

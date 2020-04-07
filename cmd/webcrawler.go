@@ -11,7 +11,7 @@ import (
 	"github.com/john-heintschel/webcrawler/internal/utils"
 )
 
-func indexer(searchString string) func (string, string) {
+func indexer(searchString string) func(string, string) {
 	return func(uri string, htmldoc string) {
 		// TODO replace this with more interesting indexing
 		hasString := strings.Contains(htmldoc, searchString)
@@ -34,18 +34,11 @@ func main() {
 	urls <- utils.UrlItem{Url: website, Depth: 0}
 	indexFunction := indexer(search_txt)
 
-	consumerOne := utils.UrlConsumer{
-		MaxDepth:           3,
+	consumer := utils.UrlConsumer{
+		MaxDepth:           2,
 		MaxRequestsPerHost: 1,
 		UrlCache:           cache,
 		HttpClient:         httpclient,
 	}
-	consumerTwo := utils.UrlConsumer{
-		MaxDepth:           3,
-		MaxRequestsPerHost: 1,
-		UrlCache:           cache,
-		HttpClient:         httpclient,
-	}
-	go consumerOne.Consume(urls, indexFunction)
-	go consumerTwo.Consume(urls, indexFunction)
+	consumer.Consume(urls, indexFunction)
 }
