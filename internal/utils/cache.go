@@ -15,6 +15,10 @@ type UrlCache struct {
 	mux      sync.Mutex
 }
 
+func NewUrlCache() *UrlCache {
+	return &UrlCache{BaseMem: make(map[string]int), ExactMem: make(map[string]bool)}
+}
+
 func (v *UrlCache) AlreadySeen(url string) bool {
 	// this function also marks as seen while it has the lock
 	v.mux.Lock()

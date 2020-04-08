@@ -3,10 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/john-heintschel/webcrawler/internal/utils"
 )
@@ -28,17 +26,13 @@ func main() {
 	website, _ := reader.ReadString('\n')
 	website = strings.Replace(website, "\n", "", -1)
 
-	httpclient := utils.WebCrawlerClient{HTTPClient: &http.Client{Timeout: time.Duration(5) * time.Second}}
-	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	cache := utils.NewUrlCache()
+
 	urls := make(chan utils.UrlItem, 100000)
 	urls <- utils.UrlItem{Url: website, Depth: 0}
+
 	indexFunction := indexer(search_txt)
 
-	consumer := utils.UrlConsumer{
-		MaxDepth:           2,
-		MaxRequestsPerHost: 1,
-		UrlCache:           cache,
-		HttpClient:         httpclient,
-	}
+	consumer := utils.NewUrlConsumer(2, 1, cache)
 	consumer.Consume(urls, indexFunction)
 }
