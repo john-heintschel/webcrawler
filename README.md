@@ -9,7 +9,7 @@ You'll need to first [install the Go runtime](https://golang.org/doc/install). A
 ## Usage
 To begin using webcrawler you can run:
 
-> go run webcrawler.go
+> go run github.com/john-heintschel/webcrawler/cmd/
 
 You'll be asked to provide some configuration options before webcrawler begins searching. In particular you'll need to provide:
  - the maximum concurrency you'd like to use, as an integer
