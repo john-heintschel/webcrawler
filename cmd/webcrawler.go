@@ -29,6 +29,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var depth int
+	fmt.Print("Specify max depth: ")
+	_, err = fmt.Scanf("%d", &depth)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var maxQueries int
+	fmt.Print("Specify maximum number of queries per domain: ")
+	_, err = fmt.Scanf("%d", &maxQueries)
+	if err != nil {
+		log.Fatal(err)
+	}
 	var wg sync.WaitGroup
 
 	var searchTxt string
@@ -54,7 +68,7 @@ func main() {
 
 	for idx := 1; idx <= concurrency; idx++ {
 		wg.Add(1)
-		consumer := utils.NewUrlConsumer(2, 1, cache)
+		consumer := utils.NewUrlConsumer(depth, maxQueries, cache)
 		go consumer.Consume(urls, indexFunction, &wg)
 	}
 	wg.Wait()
