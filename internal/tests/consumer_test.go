@@ -50,17 +50,12 @@ type indexArg struct {
 func TestConsumerDepth(t *testing.T) {
 
 	// test that consumer doesn't go beyond the depth its supposed to
-	httpclient := mockClient{}
 	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
 	urls := make(chan utils.UrlItem, 10)
 	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
 
-	testConsumer := utils.UrlConsumer{
-		MaxDepth:           1,
-		MaxRequestsPerHost: 5,
-		UrlCache:           cache,
-		HttpClient:         httpclient,
-	}
+	testConsumer := utils.NewUrlConsumer(1, 5, cache)
+	testConsumer.HttpClient = mockClient{}
 	var indexOutput []indexArg
 	mockIndexer := func(url string, input string) { indexOutput = append(indexOutput, indexArg{url, input}) }
 
@@ -70,17 +65,12 @@ func TestConsumerDepth(t *testing.T) {
 
 func TestConsumerMaxRequestsPerDomain(t *testing.T) {
 	// test that the consumer doesn't go beyond the max requests per domain
-	httpclient := mockClient{}
 	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
 	urls := make(chan utils.UrlItem, 10)
 	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
 
-	testConsumer := utils.UrlConsumer{
-		MaxDepth:           3,
-		MaxRequestsPerHost: 1,
-		UrlCache:           cache,
-		HttpClient:         httpclient,
-	}
+	testConsumer := utils.NewUrlConsumer(3, 1, cache)
+	testConsumer.HttpClient = mockClient{}
 	var indexOutput []indexArg
 	mockIndexer := func(url string, input string) { indexOutput = append(indexOutput, indexArg{url, input}) }
 

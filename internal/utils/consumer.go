@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 )
@@ -16,6 +17,11 @@ type UrlConsumer struct {
 type UrlItem struct {
 	Url   string
 	Depth int
+}
+
+func NewUrlConsumer(maxDepth int, maxRequestsPerHost int, urlCache Cache) *UrlConsumer {
+	httpclient := WebCrawlerClient{HTTPClient: &http.Client{Timeout: time.Duration(5) * time.Second}}
+	return &UrlConsumer{MaxDepth: maxDepth, MaxRequestsPerHost: maxRequestsPerHost, UrlCache: urlCache, HttpClient: httpclient}
 }
 
 func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string)) {
@@ -46,6 +52,7 @@ func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string)
 		if cachedBaseUrlCount >= v.MaxRequestsPerHost {
 			continue
 		}
+		// TODO: fetch and check robots.txt
 		htmldoc, err := v.HttpClient.GetDocument(uri)
 		if err != nil {
 			continue
