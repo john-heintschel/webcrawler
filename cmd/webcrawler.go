@@ -13,7 +13,12 @@ func indexer(searchString string) func(string, string) {
 	return func(uri string, htmldoc string) {
 		// TODO replace this with more interesting indexing
 		hasString := strings.Contains(htmldoc, searchString)
-		fmt.Printf("url: %v contains the string \"%v\": %v\n", uri, searchString, hasString)
+		fmt.Printf(
+			"url: %v contains the string \"%v\": %v\n",
+			uri,
+			searchString,
+			hasString,
+		)
 	}
 }
 

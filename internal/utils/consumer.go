@@ -13,6 +13,7 @@ type UrlConsumer struct {
 	MaxRequestsPerHost int
 	UrlCache           Cache
 	HttpClient         Client
+	DocumentParser     PageParser
 }
 
 type UrlItem struct {
@@ -20,14 +21,30 @@ type UrlItem struct {
 	Depth int
 }
 
-func NewUrlConsumer(maxDepth int, maxRequestsPerHost int, urlCache Cache) *UrlConsumer {
-	httpclient := WebCrawlerClient{HTTPClient: &http.Client{Timeout: time.Duration(5) * time.Second}}
-	return &UrlConsumer{MaxDepth: maxDepth, MaxRequestsPerHost: maxRequestsPerHost, UrlCache: urlCache, HttpClient: httpclient}
+func NewUrlConsumer(
+	maxDepth int,
+	maxRequestsPerHost int,
+	urlCache Cache,
+) *UrlConsumer {
+	httpclient := WebCrawlerClient{
+		HTTPClient: &http.Client{Timeout: time.Duration(5) * time.Second},
+	}
+	docParser := PageParser{}
+	return &UrlConsumer{
+		MaxDepth:           maxDepth,
+		MaxRequestsPerHost: maxRequestsPerHost,
+		UrlCache:           urlCache,
+		HttpClient:         httpclient,
+		DocumentParser:     docParser,
+	}
 }
 
-func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string), wg *sync.WaitGroup) {
+func (v *UrlConsumer) Consume(
+	urls chan UrlItem,
+	indexer func(uri, input string),
+	wg *sync.WaitGroup,
+) {
 	defer wg.Done()
-	docParser := PageParser{}
 	var uri string
 	var depth int
 	timeout := false
@@ -63,7 +80,7 @@ func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string)
 		if depth+1 >= v.MaxDepth {
 			continue
 		}
-		links := docParser.GetLinks(htmldoc, baseurl)
+		links := v.DocumentParser.GetLinks(htmldoc, baseurl)
 		for _, link := range links {
 			urls <- UrlItem{Url: link, Depth: depth + 1}
 		}

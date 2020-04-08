@@ -16,7 +16,10 @@ type UrlCache struct {
 }
 
 func NewUrlCache() *UrlCache {
-	return &UrlCache{BaseMem: make(map[string]int), ExactMem: make(map[string]bool)}
+	return &UrlCache{
+		BaseMem:  make(map[string]int),
+		ExactMem: make(map[string]bool),
+	}
 }
 
 func (v *UrlCache) AlreadySeen(url string) bool {

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/john-heintschel/webcrawler/internal/utils"
@@ -48,34 +49,59 @@ type indexArg struct {
 }
 
 func TestConsumerDepth(t *testing.T) {
-
 	// test that consumer doesn't go beyond the depth its supposed to
-	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	cache := utils.NewUrlCache()
 	urls := make(chan utils.UrlItem, 10)
 	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	testConsumer := utils.NewUrlConsumer(1, 5, cache)
 	testConsumer.HttpClient = mockClient{}
 	var indexOutput []indexArg
-	mockIndexer := func(url string, input string) { indexOutput = append(indexOutput, indexArg{url, input}) }
+	mockIndexer := func(url string, input string) {
+		indexOutput = append(indexOutput, indexArg{url, input})
+	}
 
-	testConsumer.Consume(urls, mockIndexer)
-	assert.Equal(t, indexOutput[0], indexArg{url: "http://www.linktest.com", htmldoc: TEST_HTMLDOC_ONE})
+	testConsumer.Consume(urls, mockIndexer, &wg)
+	assert.Equal(
+		t,
+		indexOutput[0],
+		indexArg{url: "http://www.linktest.com", htmldoc: TEST_HTMLDOC_ONE},
+	)
 }
 
 func TestConsumerMaxRequestsPerDomain(t *testing.T) {
 	// test that the consumer doesn't go beyond the max requests per domain
-	cache := &utils.UrlCache{BaseMem: make(map[string]int, 0), ExactMem: make(map[string]bool, 0)}
+	cache := utils.NewUrlCache()
 	urls := make(chan utils.UrlItem, 10)
 	urls <- utils.UrlItem{Url: "http://www.linktest.com", Depth: 0}
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	testConsumer := utils.NewUrlConsumer(3, 1, cache)
 	testConsumer.HttpClient = mockClient{}
 	var indexOutput []indexArg
-	mockIndexer := func(url string, input string) { indexOutput = append(indexOutput, indexArg{url, input}) }
+	mockIndexer := func(url string, input string) {
+		indexOutput = append(indexOutput, indexArg{url, input})
+	}
 
-	testConsumer.Consume(urls, mockIndexer)
-	assert.Equal(t, indexArg{url: "http://www.linktest.com", htmldoc: TEST_HTMLDOC_ONE}, indexOutput[0])
-	assert.Equal(t, indexArg{url: "http://www.google.com/foo.html", htmldoc: TEST_HTMLDOC_TWO}, indexOutput[1])
+	testConsumer.Consume(urls, mockIndexer, &wg)
+	assert.Equal(
+		t,
+		indexArg{
+			url:     "http://www.linktest.com",
+			htmldoc: TEST_HTMLDOC_ONE,
+		},
+		indexOutput[0],
+	)
+	assert.Equal(
+		t,
+		indexArg{
+			url:     "http://www.google.com/foo.html",
+			htmldoc: TEST_HTMLDOC_TWO,
+		},
+		indexOutput[1],
+	)
 	assert.Equal(t, 2, len(indexOutput))
 }

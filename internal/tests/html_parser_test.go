@@ -31,7 +31,11 @@ func TestHTMLParser(t *testing.T) {
 	</ul>
 	`
 	links := utils.PageParser{}.GetLinks(exampleString, "http://crawler.biz/")
-	expectedLinks := []string{"http://google.com/foo.html", "http://crawler.biz/foo.html", "http://crawler.biz/bar/baz.html"}
+	expectedLinks := []string{
+		"http://google.com/foo.html",
+		"http://crawler.biz/foo.html",
+		"http://crawler.biz/bar/baz.html",
+	}
 	if !testEqual(links, expectedLinks) {
 		t.Errorf("getLinks failed, expected %v got %v", expectedLinks, links)
 	}
