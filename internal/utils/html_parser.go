@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bufio"
 	"log"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -27,6 +29,31 @@ func makeUrlAbsolute(urlLink string, base string) string {
 		urlLink = urlLink[1:]
 	}
 	return base + urlLink
+}
+
+func (v PageParser) GetDisallowedSuffixes(robotsDoc string) []string {
+	r, _ := regexp.Compile(`User-agent: \*(\n|\r\n)(?s)(.*)(\n\n|\r\n\r\n)`)
+	afterStarRegexp, _ := regexp.Compile(`\*(?s)(.*)$`)
+	wildCardMatch := r.FindString(robotsDoc)
+	s := bufio.NewScanner(strings.NewReader(wildCardMatch))
+
+	var returnSuffixes []string
+	for s.Scan() {
+		line := s.Text()
+		if strings.HasPrefix(line, "User-agent: *") {
+			continue
+		}
+		if line == "Disallow: /" {
+			returnSuffixes = append(returnSuffixes, "")
+			continue
+		}
+		if len(line) <= 10 {
+			continue
+		}
+		suffix := afterStarRegexp.FindStringSubmatch(line)[1]
+		returnSuffixes = append(returnSuffixes, suffix)
+	}
+	return returnSuffixes
 }
 
 func (v PageParser) GetLinks(htmldoc string, baseurl string) []string {

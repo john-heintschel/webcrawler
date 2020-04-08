@@ -40,3 +40,44 @@ func TestHTMLParser(t *testing.T) {
 		t.Errorf("getLinks failed, expected %v got %v", expectedLinks, links)
 	}
 }
+
+func TestRobotsParser(t *testing.T) {
+	// robots.txt could use \n or \r\n for newline
+	exampleString := "User-agent: test\n" +
+		"Disallow: /.png\n\n" +
+		"User-agent: *\n" +
+		"Disallow: /\n" +
+		"Disallow: /*.json\n" +
+		"Disallow: /*.xml\n\n" +
+		"User-agent: test2\n" +
+		"Disallow: /.mp3"
+
+	disallowed := utils.PageParser{}.GetDisallowedSuffixes(exampleString)
+	expectedDisallowed := []string{"", ".json", ".xml"}
+	if !testEqual(disallowed, expectedDisallowed) {
+		t.Errorf(
+			"getDisallowedSuffixes failed, expected %v got %v",
+			expectedDisallowed,
+			disallowed,
+		)
+	}
+
+	exampleString2 := "User-agent: test\r\n" +
+		"Disallow: /.png\r\n\r\n" +
+		"User-agent: *\r\n" +
+		"Disallow: /\r\n" +
+		"Disallow: /*.json\r\n" +
+		"Disallow: /*.xml\r\n\r\n" +
+		"User-agent: test2\r\n" +
+		"Disallow: /.mp3"
+
+	disallowed = utils.PageParser{}.GetDisallowedSuffixes(exampleString2)
+	expectedDisallowed = []string{"", ".json", ".xml"}
+	if !testEqual(disallowed, expectedDisallowed) {
+		t.Errorf(
+			"getDisallowedSuffixes failed, expected %v got %v",
+			expectedDisallowed,
+			disallowed,
+		)
+	}
+}
