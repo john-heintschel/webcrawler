@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -24,7 +25,8 @@ func NewUrlConsumer(maxDepth int, maxRequestsPerHost int, urlCache Cache) *UrlCo
 	return &UrlConsumer{MaxDepth: maxDepth, MaxRequestsPerHost: maxRequestsPerHost, UrlCache: urlCache, HttpClient: httpclient}
 }
 
-func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string)) {
+func (v *UrlConsumer) Consume(urls chan UrlItem, indexer func(uri, input string), wg *sync.WaitGroup) {
+	defer wg.Done()
 	docParser := PageParser{}
 	var uri string
 	var depth int

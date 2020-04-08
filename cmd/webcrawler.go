@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"log"
 	"strings"
+	"sync"
 
 	"github.com/john-heintschel/webcrawler/internal/utils"
 )
@@ -18,21 +18,39 @@ func indexer(searchString string) func(string, string) {
 }
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
+	var concurrency int
+	fmt.Print("Specify max concurrency: ")
+	_, err := fmt.Scanf("%d", &concurrency)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var wg sync.WaitGroup
+
+	var searchTxt string
 	fmt.Print("Enter exact string to search: ")
-	search_txt, _ := reader.ReadString('\n')
-	search_txt = strings.Replace(search_txt, "\n", "", -1)
+	_, err = fmt.Scanln(&searchTxt)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var website string
 	fmt.Print("Enter website to start search: ")
-	website, _ := reader.ReadString('\n')
-	website = strings.Replace(website, "\n", "", -1)
+	_, err = fmt.Scanln(&website)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	cache := utils.NewUrlCache()
 
 	urls := make(chan utils.UrlItem, 100000)
 	urls <- utils.UrlItem{Url: website, Depth: 0}
 
-	indexFunction := indexer(search_txt)
+	indexFunction := indexer(searchTxt)
 
-	consumer := utils.NewUrlConsumer(2, 1, cache)
-	consumer.Consume(urls, indexFunction)
+	for idx := 1; idx <= concurrency; idx++ {
+		wg.Add(1)
+		consumer := utils.NewUrlConsumer(2, 1, cache)
+		go consumer.Consume(urls, indexFunction, &wg)
+	}
+	wg.Wait()
 }
