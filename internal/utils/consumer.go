@@ -53,7 +53,7 @@ func (v *UrlConsumer) Consume(
 		case urlitem := <-urls:
 			uri = urlitem.Url
 			depth = urlitem.Depth
-		case <-time.After(time.Second):
+		case <-time.After(time.Second / 2):
 			timeout = true
 		}
 		if timeout {
@@ -71,7 +71,18 @@ func (v *UrlConsumer) Consume(
 		if cachedBaseUrlCount >= v.MaxRequestsPerHost {
 			continue
 		}
-		// TODO: fetch and check robots.txt
+		disallowed, exists := v.UrlCache.GetRobotsPatterns(baseurl)
+		if !exists {
+			robots, err := v.HttpClient.GetDocument(baseurl + "robots.txt")
+			if err != nil {
+				robots = ""
+			}
+			disallowed = v.DocumentParser.GetDisallowedPatterns(robots)
+			v.UrlCache.SetRobotsPatterns(baseurl, disallowed)
+		}
+		if UrlIsForbidden(uri, disallowed) {
+			continue
+		}
 		htmldoc, err := v.HttpClient.GetDocument(uri)
 		if err != nil {
 			continue

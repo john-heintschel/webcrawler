@@ -34,5 +34,13 @@ func TestCache(t *testing.T) {
 		cache.GetBaseUrlCount("there") != 10 {
 		t.Errorf("cache Increment failed")
 	}
-
+	patterns, exists := cache.GetRobotsPatterns("https://www.example.com/")
+	if exists {
+		t.Errorf("robots cache fetch failed")
+	}
+	cache.SetRobotsPatterns("https://www.example.com/", []string{"*.json$"})
+	patterns, exists = cache.GetRobotsPatterns("https://www.example.com/")
+	if !exists || !testEqual(patterns, []string{"*.json$"}) {
+		t.Errorf("robots cache set failed")
+	}
 }

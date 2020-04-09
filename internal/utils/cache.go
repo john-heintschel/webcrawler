@@ -7,19 +7,36 @@ import (
 type Cache interface {
 	GetBaseUrlCount(string) int
 	AlreadySeen(string) bool
+	GetRobotsPatterns(string) ([]string, bool)
+	SetRobotsPatterns(string, []string)
 }
 
 type UrlCache struct {
-	BaseMem  map[string]int
-	ExactMem map[string]bool
-	mux      sync.Mutex
+	BaseMem   map[string]int
+	ExactMem  map[string]bool
+	RobotsMem map[string][]string
+	mux       sync.Mutex
 }
 
 func NewUrlCache() *UrlCache {
 	return &UrlCache{
-		BaseMem:  make(map[string]int),
-		ExactMem: make(map[string]bool),
+		BaseMem:   make(map[string]int),
+		ExactMem:  make(map[string]bool),
+		RobotsMem: make(map[string][]string),
 	}
+}
+
+func (v *UrlCache) GetRobotsPatterns(baseurl string) ([]string, bool) {
+	v.mux.Lock()
+	defer v.mux.Unlock()
+	patterns, exists := v.RobotsMem[baseurl]
+	return patterns, exists
+}
+
+func (v *UrlCache) SetRobotsPatterns(baseurl string, patterns []string) {
+	v.mux.Lock()
+	defer v.mux.Unlock()
+	v.RobotsMem[baseurl] = patterns
 }
 
 func (v *UrlCache) AlreadySeen(url string) bool {
